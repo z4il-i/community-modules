@@ -16,7 +16,8 @@ let
         builtins.mapAttrs (n: v: "export ${n}=${v}") cfg.gamescopeSession.env
       );
     in
-    pkgs.writeShellScriptBin "steam-gamescope" ''
+    pkgs.writeScriptBin "steam-gamescope" ''
+      #!${config.environment.binsh}
       ${builtins.concatStringsSep "\n" exports}
       gamescope --steam ${toString cfg.gamescopeSession.args} -- steam ${toString cfg.gamescopeSession.steamArgs}
     '';
@@ -43,8 +44,8 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.steam;
-      defaultText = lib.literalExpression "pkgs.steam";
+      default = pkgs.callPackage ./package.nix { inherit config; };
+      defaultText = lib.literalExpression "pkgs.callPackage ./package.nix {}";
       example = lib.literalExpression ''
         pkgs.steam.override {
           extraEnv = {
@@ -200,7 +201,6 @@ in
 
     environment.systemPackages = [
       cfg.package
-      cfg.package.run
     ]
     ++ lib.optionals cfg.gamescopeSession.enable [
       steam-gamescope

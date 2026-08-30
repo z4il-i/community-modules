@@ -33,35 +33,8 @@ in
         `NH_FLAKE` can point to either a folder containing a flake, or to an outside repository containing the flake.
       '';
     };
-
-    clean = {
-      enable = lib.mkEnableOption "periodic garbage collection with nh clean all";
-
-      dates = lib.mkOption {
-        type = lib.types.singleLineStr;
-        default = "weekly";
-        description = ''
-          How often `nh clean` is performed. Accepts either a standard {manpage}`crontab(5)` expression
-          or one of: `hourly`, `daily`, `weekly`, `monthly`, or `yearly`.
-
-          If a standard {manpage}`crontab(5)` expression is provided this value will be passed directly
-          to the `scheduler` implementation and execute exactly as specified.
-
-          If one of the special values, `hourly`, `daily`, `monthly`, `weekly`, or `yearly`, is provided then the
-          underlying `scheduler` implementation will use its features to decide when best to run.
-        '';
-      };
-
-      extraArgs = lib.mkOption {
-        type = lib.types.singleLineStr;
-        default = "";
-        example = "--keep 5 --keep-since 3d";
-        description = ''
-          Options given to nh clean when the service is run automatically.
-
-          See `nh clean all --help` for more information.
-        '';
-      };
+    options.services.nix-collect-garbage.backend = lib.mkOption {
+      type = lib.types.enum [ "nh" ];
     };
   };
 
@@ -80,9 +53,8 @@ in
       };
     };
 
-    providers.scheduler.tasks.nh-clean = lib.mkIf cfg.clean.enable {
-      command = "${lib.getExe cfg.package} clean all ${cfg.clean.extraArgs}";
-      interval = cfg.clean.dates;
+    config.services.nix-garbage-collect = lib.mkIf (config.services.nix-garbage-collect.backend == "nh") {
+      command = "${lib.getExe cfg.package} clean all ${config.services.nix-garbage-collect.extraArgs}";
     };
   };
 }
